@@ -21,7 +21,11 @@ class Vector:
     def __mul__(self, a):
         assert not isinstance(a, Vector)
         return Vector(self.x*a, self.y*a, self.z*a)
+
     def __rmul__(self, a):
+        return  self.__mul__(a)
+
+    def __truediv__(self, a):
         return  self.__mul__(1./a)
     
     def __add__(self, v):
