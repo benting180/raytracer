@@ -2,6 +2,7 @@ from color import Color
 from vector import Vector
 from image import Image
 from ray import Ray
+from progress import ProgressBar
 class Engine:
 
 
@@ -24,6 +25,8 @@ class Engine:
         dx = (xmax - xmin)/(width-1)
         dy = (ymax - ymin)/(height-1)
 
+        pb = ProgressBar(height*width)
+
         for j in range(height):
             y = ymin + dy*j
             for i in range(width):
@@ -32,6 +35,7 @@ class Engine:
                 ray = Ray(camera, Vector(x, y, 0) - camera)
                 c = self.ray_trace(ray, scene)
                 im.set_pixel(j, i, c)
+                pb.update(1)
         return im
 
     def ray_trace(self, ray, scene):
@@ -55,4 +59,26 @@ class Engine:
         return (dist_min, obj_hit)
 
     def color_at(self, obj_hit, hit_pos, scene):
-        return obj_hit.material
+        material = obj_hit.material
+        base = material.base
+        # 1. ambient
+        ambient = material.ambient 
+
+        # 2. diffuse
+        # his_pos2light dot surface norm
+        colors = Color(0,0,0)
+        M = 1.0
+        for light in scene.lights:
+            his_pos2light = (light - hit_pos).normalize()
+            hit_pos_perpen = (hit_pos - obj_hit.center).normalize()
+            cos = his_pos2light.dot(hit_pos_perpen) 
+            cos = 0 if cos < 0 else cos
+            diffuse = cos * material.diffuse * M
+
+            specular = Color(0,0,0)
+            color = ambient + diffuse + specular
+            colors += color
+        return colors
+
+
+        # return obj_hit.material
