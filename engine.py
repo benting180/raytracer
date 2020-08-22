@@ -3,6 +3,7 @@ from vector import Vector
 from image import Image
 from ray import Ray
 from progress import ProgressBar
+import math
 class Engine:
 
 
@@ -44,7 +45,7 @@ class Engine:
         if obj_hit is None:
             return color
         hit_pos = ray.origin + dist_hit * ray.direction
-        color += self.color_at(obj_hit, hit_pos, scene)
+        color += self.color_at(obj_hit, hit_pos, scene, ray)
         return color
 
     def find_nearest(self, ray, scene):
@@ -58,7 +59,7 @@ class Engine:
 
         return (dist_min, obj_hit)
 
-    def color_at(self, obj_hit, hit_pos, scene):
+    def color_at(self, obj_hit, hit_pos, scene, ray):
         material = obj_hit.material
         base = material.base
         # 1. ambient
@@ -75,7 +76,25 @@ class Engine:
             cos = 0 if cos < 0 else cos
             diffuse = cos * material.diffuse * M
 
-            specular = Color(0,0,0)
+            if cos == 0:
+                specular = 0 * material.specular
+            else:
+                R = 2*cos*hit_pos_perpen - his_pos2light
+                k = 1
+                # Phong
+                VR = (ray.direction*-1).dot(R.normalize())
+                if VR < 0:
+                    VR = 0
+                specular = VR**2 * material.specular
+
+                # Half-way
+                # H = his_pos2light + ray.direction*-1
+                # HR = H.dot(R)
+                # if HR < 0:
+                #     HR = 0
+                # specular = HR**1 * material.specular
+
+                # specular = 0 * material.specular
             color = ambient + diffuse + specular
             colors += color
         return colors

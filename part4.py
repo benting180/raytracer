@@ -19,14 +19,14 @@ def main(fout):
     ambient = Color.from_hex("#111111")
     diffuse = Color.from_hex("#FFFFFF")
     specular = Color.from_hex("#FFFFFF")
-    material1 = Material(base=red, ambient=ambient, diffuse=red, specular=specular)
-    material2 = Material(base=yellow, ambient=ambient, diffuse=yellow, specular=specular)
-    material3 = Material(base=green, ambient=ambient, diffuse=green, specular=specular)
+    material1 = Material(base=red, ambient=red*0.1, diffuse=red, specular=specular)
+    material2 = Material(base=yellow, ambient=yellow*0.1, diffuse=yellow, specular=specular)
+    material3 = Material(base=green, ambient=green*0.1, diffuse=green, specular=specular)
     sphere1 = Sphere(Point(+0.3, 0.0, 0), 0.2, material1)
     sphere2 = Sphere(Point(+0.0, 0.0, 0), 0.2, material2)
     sphere3 = Sphere(Point(-0.3, 0.0, 0), 0.2, material3)
     light1 = Light(-1, -1, -1)
-    light2 = Light(1, 1, -1)
+    light2 = Light(0, 0, -1)
     # lights = [light1, light2]
     lights = [light2]
     objects = [sphere1, sphere2, sphere3]
