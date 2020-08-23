@@ -1,4 +1,5 @@
 import sys
+import argparse
 from vector import Vector
 from color import Color
 from sphere import Sphere
@@ -9,7 +10,10 @@ from material import Material
 from light import Light
 
 
-def main(fout):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fout', help="output file name")
+    args = parser.parse_args()
     WIDTH = 320
     HEIGHT = 200
     camera = Vector(0, 0, -1)
@@ -35,12 +39,8 @@ def main(fout):
 
     engine = Engine()
     image = engine.render(scene)
-    image.export(fout)
+    image.export(args.fout)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2:
-        main(sys.argv[1])
-    else:
-        print("Usage:\n    python part4.py fout.ppm")
-        sys.exit()
+    main()
