@@ -45,7 +45,8 @@ class Engine:
         if obj_hit is None:
             return color
         hit_pos = ray.origin + dist_hit * ray.direction
-        color += self.color_at(obj_hit, hit_pos, scene, ray)
+        normal = obj_hit.normal(hit_pos)
+        color += self.color_at(obj_hit, hit_pos, normal, scene)
         return color
 
     def find_nearest(self, ray, scene):
@@ -59,45 +60,40 @@ class Engine:
 
         return (dist_min, obj_hit)
 
-    def color_at(self, obj_hit, hit_pos, scene, ray):
+    def color_at(self, obj_hit, hit_pos, normal, scene):
         material = obj_hit.material
-        base = material.base
+        obj_color = material.color
         # 1. ambient
-        ambient = material.ambient 
+        color = Color.from_hex("#FFFFFF") * material.ambient 
+        to_cam = scene.camera - hit_pos
 
-        # 2. diffuse
-        # his_pos2light dot surface norm
-        colors = Color(0,0,0)
-        M = 1.0
+        specular_k = 50
         for light in scene.lights:
-            his_pos2light = (light - hit_pos).normalize()
-            hit_pos_perpen = (hit_pos - obj_hit.center).normalize()
-            cos = his_pos2light.dot(hit_pos_perpen) 
-            cos = 0 if cos < 0 else cos
-            diffuse = cos * material.diffuse * M
+            to_light = Ray(hit_pos, light.position - hit_pos)
+            # 2. diffuse
+            # to_light dot surface norm
+            cos = max(to_light.direction.dot(normal), 0)  
+            color += (
+                obj_color *
+                cos *
+                material.diffuse
+            )
 
-            if cos == 0:
-                specular = 0 * material.specular
-            else:
-                R = 2*cos*hit_pos_perpen - his_pos2light
-                k = 1
-                # Phong
-                VR = (ray.direction*-1).dot(R.normalize())
-                if VR < 0:
-                    VR = 0
-                specular = VR**2 * material.specular
+            reflect = 2*cos*normal - to_light.direction
+            # 3. Phong
+            # color += (
+            #     max((to_cam).dot(reflect.normalize()), 0)**material.specular *
+            #     light.color
+            # )  
 
-                # Half-way
-                # H = his_pos2light + ray.direction*-1
-                # HR = H.dot(R)
-                # if HR < 0:
-                #     HR = 0
-                # specular = HR**1 * material.specular
-
-                # specular = 0 * material.specular
-            color = ambient + diffuse + specular
-            colors += color
-        return colors
+            # 4. Half-way
+            half_vector = (to_light.direction + to_cam).normalize()
+            HR = max(half_vector.dot(normal), 0)
+            color += (
+                material.specular * light.color *
+                HR ** specular_k
+            )
+        return color
 
 
         # return obj_hit.material

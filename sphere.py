@@ -22,3 +22,7 @@ class Sphere(Vector):
             if dist > 0:
                 return dist
         return None
+
+    def normal(self, pos):
+        """ for a sphere, return the unit normal vector at pos. """
+        return (pos - self.center).normalize()
