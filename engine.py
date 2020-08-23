@@ -40,13 +40,13 @@ class Engine:
         return im
 
     def ray_trace(self, ray, scene):
-        color = Color(0.1, 0.1, 0.1)
+        color = Color.from_hex("#000000")
         dist_hit, obj_hit = self.find_nearest(ray, scene)
         if obj_hit is None:
             return color
         hit_pos = ray.origin + dist_hit * ray.direction
         normal = obj_hit.normal(hit_pos)
-        color += self.color_at(obj_hit, hit_pos, normal, scene)
+        color += self.color_at(obj_hit, hit_pos, normal, ray, scene)
         return color
 
     def find_nearest(self, ray, scene):
@@ -60,11 +60,12 @@ class Engine:
 
         return (dist_min, obj_hit)
 
-    def color_at(self, obj_hit, hit_pos, normal, scene):
+    def color_at(self, obj_hit, hit_pos, normal, ray, scene, do_reflect=True):
         material = obj_hit.material
-        obj_color = material.color
+        obj_color = obj_hit.color(hit_pos)
         # 1. ambient
         color = Color.from_hex("#FFFFFF") * material.ambient 
+
         to_cam = scene.camera - hit_pos
 
         specular_k = 50
@@ -93,7 +94,45 @@ class Engine:
                 material.specular * light.color *
                 HR ** specular_k
             )
+        if do_reflect:
+            color += self.color_reflect(obj_hit, hit_pos, scene, ray)
         return color
+    
+    def color_reflect(self, obj_hit, hit_pos, scene, in_ray, depth=0):
+        """ from the current obj_hit
+        generate reflection light
+        find next hit object for maximum depth of 3"""
+        if depth >= 2:
+            reflection = obj_hit.color(hit_pos) * obj_hit.material.reflection
+            normal = obj_hit.normal(hit_pos)
+            original = self.color_at(obj_hit, hit_pos, normal, in_ray, scene, do_reflect=False)
+            return reflection + original * obj_hit.material.reflection
+        else:
+            # from current hit obj, and pos, generate reflection ray
+            # using self.find_nearest()
+
+            # generate reflection ray
+            inray_dir = in_ray.direction
+            normal = obj_hit.normal(hit_pos)
+            reflect_dir = inray_dir - 2*inray_dir.dot(normal)*normal
+            out_ray = Ray(hit_pos+0.00001*reflect_dir, reflect_dir)
+            next_dist_hit, next_obj_hit = self.find_nearest(out_ray, scene)
+            if next_dist_hit is not None and next_obj_hit is not None:
+                # hit something, continue next reflection
+                next_hit_pos = out_ray.origin + next_dist_hit*out_ray.direction
+                normal = obj_hit.normal(hit_pos)
+                return self.color_reflect(next_obj_hit, next_hit_pos, scene, out_ray, depth=depth+1)
+            else:
+                if depth == 0:
+                    # no reflection at all
+                    return Color.from_hex("#000000")
+                else:
+                    # reflection within maximum depth
+                    reflection = obj_hit.color(hit_pos) * obj_hit.material.reflection
+                    normal = obj_hit.normal(hit_pos)
+                    original = self.color_at(obj_hit, hit_pos, normal, in_ray, scene, do_reflect=False)
+                    return reflection + original * obj_hit.material.reflection
+
 
 
         # return obj_hit.material
