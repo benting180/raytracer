@@ -9,9 +9,11 @@ from scene import Scene
 import scenes
 from material import Material
 from light import Light
+import time
 
 
 def main():
+    t1 = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument('fout', help="output file name")
     args = parser.parse_args()
@@ -19,6 +21,7 @@ def main():
     engine = Engine()
     image = engine.render(scenes.scene_5())
     image.export(args.fout)
+    print("time spend: {:.2f} s".format(time.time()-t1))
 
 
 if __name__ == '__main__':
