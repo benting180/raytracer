@@ -15,78 +15,65 @@ class Engine:
         """ Render image from stuff inside scene """
         width = scene.width
         height = scene.height
-        ar = width / height
 
-        camera = scene.camera
         im = Image(width, height)
+        css = Array('f', height * width * 3)
+        dh = height // 8
+        h = 0
+        ps = []
+        for _ in range(8):
+            print("h, dh", h, dh)
+            p = Process(target=self.cal_rows, args=(css, scene, h, dh))
 
-        xmin = -1
-        xmax = 1
-        ymax = xmax / ar
-        ymin = -ymax
-        dx = (xmax - xmin)/(width-1)
-        dy = (ymax - ymin)/(height-1)
+            p.start()
+            ps.append(p)
+            h += dh
 
-        pb = ProgressBar(height*width)
-
-        k = 0
-        eights = []
-        ts = []
-        eight = Array('f', 8*3)
-        for j in range(height):
-            y = ymin + dy*j
-            for i in range(width):
-                x = xmin + dx*i
-                ray = Ray(camera, Vector(x, y, 0) - camera)
-                k += 1
-                t = Process(target=self.ray_trace_set, args=(eight, k, ray, scene))
-                t.start()
-                ts.append(t)
-
-
-                if k == 8:
-                    for t in ts:
-                        t.join()
-                    print("should be waiting...")
-
-                    # done
-                    eights.append(eight[:])
-                    k = 0
-                    ts = []
-                    eight = Array('f', 8*3)
-
-
-                # c = self.ray_trace(ray, scene)
-                # im.set_pixel(j, i, c)
-                pb.update(1)
-        print(eights)
-        print(len(eights))
-        print(type(eights))
-        new_eights = []
-        for eight in eights:
-            new_eights += eight
+        for p in ps:
+            p.join()
 
         k = 0
         for j in range(height):
             for i in range(width):
-                r = new_eights[k+0]
-                g = new_eights[k+1]
-                b = new_eights[k+2]
+                r = css[k+0]
+                g = css[k+1]
+                b = css[k+2]
                 k += 3
                 c = Color(r, g, b)
                 im.set_pixel(j, i, c)
 
         return im
 
-    def ray_trace_set(self, eight, k, ray, scene, depth=0):
-        print("task {} started".format(k))
-        c = self.ray_trace(ray, scene)
-        i = (k-1)*3
-        eight[i+0] = c.x
-        eight[i+1] = c.y
-        eight[i+2] = c.z
-        print("task {} finished".format(k))
-        return
+    def cal_rows(self, css, scene, h, dh):
+        width = scene.width
+        height = scene.height
+        ar = width / height
+        camera = scene.camera
+        xmin = -1
+        xmax = 1
+        ymax = xmax / ar
+        ymin = -ymax
+        dx = (xmax - xmin)/(width-1)
+        dy = (ymax - ymin)/(height-1)
+        cs = [] # 3 * width * (dh)
+        pb = ProgressBar((dh)*width)
+
+        for j in range(h, h+dh):
+            y = ymin + dy*j
+            for i in range(width):
+                x = xmin + dx*i
+                ray = Ray(camera, Vector(x, y, 0) - camera)
+                c = self.ray_trace(ray, scene)
+                cs.append(c.x)
+                cs.append(c.y)
+                cs.append(c.z)
+                pb.update(1)
+
+
+        a = h*width*3
+        b = (h+dh)*width*3
+        css[a:b] = cs
+
 
     def ray_trace(self, ray, scene, depth=0):
         color = Color.from_hex("#000000")
