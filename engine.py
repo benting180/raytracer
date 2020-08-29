@@ -15,6 +15,35 @@ class Engine:
         """ Render image from stuff inside scene """
         width = scene.width
         height = scene.height
+        ar = width / height
+
+        camera = scene.camera
+        im = Image(width, height)
+
+        xmin = -1
+        xmax = 1
+        ymax = xmax / ar
+        ymin = -ymax
+        dx = (xmax - xmin)/(width-1)
+        dy = (ymax - ymin)/(height-1)
+
+        pb = ProgressBar(height*width)
+
+        for j in range(height):
+            y = ymin + dy*j
+            for i in range(width):
+                x = xmin + dx*i
+
+                ray = Ray(camera, Vector(x, y, 0) - camera)
+                c = self.ray_trace(ray, scene)
+                im.set_pixel(j, i, c)
+                pb.update(1)
+        return im
+
+    def render_multi(self, scene):
+        """ Render image from stuff inside scene """
+        width = scene.width
+        height = scene.height
 
         im = Image(width, height)
         css = Array('f', height * width * 3)

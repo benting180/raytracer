@@ -19,7 +19,8 @@ def main():
     args = parser.parse_args()
     
     engine = Engine()
-    image = engine.render(scenes.scene_5())
+    # image = engine.render(scenes.scene_5())
+    image = engine.render_multi(scenes.scene_5())
     image.export(args.fout)
     print("time spend: {:.2f} s".format(time.time()-t1))
 
