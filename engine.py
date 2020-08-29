@@ -4,6 +4,7 @@ from image import Image
 from ray import Ray
 from progress import ProgressBar
 import math
+from multiprocessing import Process, Array
 class Engine:
 
 
@@ -28,16 +29,64 @@ class Engine:
 
         pb = ProgressBar(height*width)
 
+        k = 0
+        eights = []
+        ts = []
+        eight = Array('f', 8*3)
         for j in range(height):
             y = ymin + dy*j
             for i in range(width):
                 x = xmin + dx*i
-
                 ray = Ray(camera, Vector(x, y, 0) - camera)
-                c = self.ray_trace(ray, scene)
-                im.set_pixel(j, i, c)
+                k += 1
+                t = Process(target=self.ray_trace_set, args=(eight, k, ray, scene))
+                t.start()
+                ts.append(t)
+
+
+                if k == 8:
+                    for t in ts:
+                        t.join()
+                    print("should be waiting...")
+
+                    # done
+                    eights.append(eight[:])
+                    k = 0
+                    ts = []
+                    eight = Array('f', 8*3)
+
+
+                # c = self.ray_trace(ray, scene)
+                # im.set_pixel(j, i, c)
                 pb.update(1)
+        print(eights)
+        print(len(eights))
+        print(type(eights))
+        new_eights = []
+        for eight in eights:
+            new_eights += eight
+
+        k = 0
+        for j in range(height):
+            for i in range(width):
+                r = new_eights[k+0]
+                g = new_eights[k+1]
+                b = new_eights[k+2]
+                k += 3
+                c = Color(r, g, b)
+                im.set_pixel(j, i, c)
+
         return im
+
+    def ray_trace_set(self, eight, k, ray, scene, depth=0):
+        print("task {} started".format(k))
+        c = self.ray_trace(ray, scene)
+        i = (k-1)*3
+        eight[i+0] = c.x
+        eight[i+1] = c.y
+        eight[i+2] = c.z
+        print("task {} finished".format(k))
+        return
 
     def ray_trace(self, ray, scene, depth=0):
         color = Color.from_hex("#000000")
